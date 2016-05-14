@@ -1,7 +1,6 @@
 #include <CircBuf.h>
 
 #include <cstring>
-#include <stdexcept>
 
 #include <errno.h>
 #include <sys/mman.h>
@@ -13,7 +12,8 @@ namespace circbuffs
       m_block_size(block_size),
       m_buffer(0),
       m_cur_pos(0),
-      m_block_descs(0)
+      m_block_descs(0),
+      m_root()
    {
       if(size % block_size != 0)
       {
@@ -24,7 +24,7 @@ namespace circbuffs
       m_block_descs.resize(size / block_size);
 
       m_buffer = mmap(NULL, m_size, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED,
+                      MAP_PRIVATE | MAP_ANONYMOUS,
                       -1, 0);
       if(m_buffer == MAP_FAILED)
       {
