@@ -27,6 +27,7 @@ namespace circbuffs
 
          inline Path& add_child(const std::string& name, PathType type, std::size_t file_idx = 0);
          inline Path& find_child(const std::string& name);
+         inline Path& move_path(const std::string& from, const std::string& to);
 
          const std::string& get_name() const { return m_name; }
          
@@ -129,6 +130,26 @@ namespace circbuffs
          throw std::invalid_argument("Path not found!");
       }
    }
+   
+   CircBuf::Path&
+   CircBuf::Path::move_path(const std::string& from, const std::string& to)
+   {
+      Path& from_path = find_child(from);
+      if(from_path.m_parent == 0)
+      {
+         throw std::invalid_argument("Cannot move the root path");
+      }
+      Path& to_path = find_child(to);
+
+      std::map<std::string, Path>::iterator itr = to_path.m_children.find(from_path.get_name());
+      if(itr != to_path.m_children.end())
+      {
+         throw std::invalid_argument("The destination already contains the name");
+      }
+      to_path.m_children[from_path.get_name()] = from_path;
+      from_path.m_parent->m_children.erase(from_path.get_name());
+   }
+
 }
 
 #endif
