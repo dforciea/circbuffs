@@ -15,41 +15,50 @@ namespace circbuffs
    public:
       CircBuf(std::size_t size, std::size_t block_size = 4096);
       ~CircBuf();
+
       class Path
       {
       public:
-         Path() : m_name("") { }
-         Path(const std::string& name) : m_name(name) { }
+         enum PathType { DIR, FILE };
 
-         inline bool add_child(const Path& child);
-         inline const Path& find_child(const std::string& name);
+         Path() : m_name(""), m_parent(0), m_type(DIR), m_file_idx(0), m_children() { }
+         Path(const std::string& name, PathType type, Path* parent, std::size_t file_idx = 0) : 
+            m_name(name), m_parent(parent), m_type(type), m_file_idx(file_idx), m_children() { }
+
+         inline Path& add_child(const std::string& name, PathType type, std::size_t file_idx = 0);
+         inline Path& find_child(const std::string& name);
 
          const std::string& get_name() const { return m_name; }
          
       private:
          inline void find_child(const std::string& name, std::string::size_type cur_offset, Path*& cur_path);
          std::string m_name;
+         Path* m_parent;
+         PathType m_type;
+         std::size_t m_file_idx;
          std::map<std::string, Path> m_children;
       };
    private:
      
       struct block_desc_t
       {
-         std::size_t file_id;
+         std::size_t file_idx;
          std::size_t next_block;
-         std::size_t size;
       };
 
       struct file_desc_t
       {
-         std::string path;
+         Path path;
+         std::size_t first_block_idx;
+         std::size_t cur_seek_block_idx; 
+         std::size_t size;
       };
 
-      size_t m_size;
-      size_t m_block_size;
+      std::size_t m_size;
+      std::size_t m_block_size;
 
       void* m_buffer;
-      size_t m_cur_pos;
+      std::size_t m_cur_pos;
 
       std::vector<block_desc_t> m_block_descs;
       std::vector<file_desc_t> m_file_descs;
@@ -57,22 +66,22 @@ namespace circbuffs
       Path m_root;
    };
 
-   bool
-   CircBuf::Path::add_child(const CircBuf::Path& child)
+   CircBuf::Path& 
+   CircBuf::Path::add_child(const std::string& name, PathType type, std::size_t file_idx)
    {
-      std::map<std::string, Path>::iterator itr = m_children.find(child.get_name());
+      std::map<std::string, Path>::iterator itr = m_children.find(name);
       if(itr == m_children.end())
       {
-         m_children[child.get_name()] = child;
-         return true;
+         m_children[name] = Path(name, type, this, file_idx);
+         return m_children[name];
       }
       else
       {
-         return false;
+         throw std::invalid_argument("Filename already exists");
       }
    }
 
-   const CircBuf::Path&
+   CircBuf::Path&
    CircBuf::Path::find_child(const std::string& name)
    {
       Path* cur_path = this;
