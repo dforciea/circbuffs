@@ -15,7 +15,6 @@ namespace circbuffs
    public:
       CircBuf(std::size_t size, std::size_t block_size = 4096);
       ~CircBuf();
-   private:
       class Path
       {
       public:
@@ -32,6 +31,7 @@ namespace circbuffs
          std::string m_name;
          std::map<std::string, Path> m_children;
       };
+   private:
      
       struct block_desc_t
       {
